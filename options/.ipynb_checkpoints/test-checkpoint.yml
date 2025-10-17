@@ -1,0 +1,109 @@
+# ========================== 通用设置 ==========================
+name: NAFNet-SAR-Test
+model_type: ImageRestorationModel
+scale: 1
+num_gpu: 1
+manual_seed: 42
+
+# ========================== 数据集设置 ==========================
+datasets:
+  # 测试 anisotropic 模糊核
+  test_aniso:
+    name: Test_Aniso
+    type: PairedGrayscaleImageDataset
+    dataroot_gt: ./datasets/test256-single # 清晰图像路径
+    dataroot_lq: ./results/generated_lq/aniso_256   # 模糊图像路径
+    color: gray
+    io_backend:
+      type: disk
+    filename_tmpl: '{}'
+    gt_size: 256
+    use_flip: false
+    use_rot: false
+    use_shuffle: false
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 16
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  # 测试 generalized_aniso 模糊核
+  test_generalized_aniso:
+    name: Test_Generalized_Aniso
+    type: PairedGrayscaleImageDataset
+    dataroot_gt: ./datasets/test256-single   # 清晰图像路径
+    dataroot_lq: ./results/generated_lq/generalized_aniso_256 # 模糊图像路径
+    color: gray
+    io_backend:
+      type: disk
+    filename_tmpl: '{}'
+    gt_size: 256
+    use_flip: false
+    use_rot: false
+    use_shuffle: false
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 16
+    prefetch_mode: ~
+
+  # 测试 plateau_aniso 模糊核
+  test_plateau_aniso:
+    name: Test_Plateau_Aniso
+    type: PairedGrayscaleImageDataset
+    dataroot_gt: ./datasets/test256-single  # 清晰图像路径
+    dataroot_lq: ./results/generated_lq/plateau_aniso_256  # 模糊图像路径
+    color: gray
+    io_backend:
+      type: disk
+    filename_tmpl: '{}'
+    gt_size: 256
+    use_flip: false
+    use_rot: false
+    use_shuffle: false
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 16
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+# ========================== 网络设置 ==========================
+network_g:
+  type: NAFNet
+  img_channel: 1
+  width: 32
+  enc_blk_nums: [1, 1, 1, 28]
+  middle_blk_num: 1
+  dec_blk_nums: [1, 1, 1, 1]
+
+# ========================== 路径与权重设置 ==========================
+path:
+  pretrain_network_g: experiments/NAFNet-SAR-FromScratch-width32-SingleBlur-256-single/models/net_g_200000.pth
+  strict_load_g: true
+  resume_state: ~
+
+# ========================== 测试设置 ==========================
+val:
+  save_img: true
+  suffix: ~
+  rgb2bgr: false   # ✅ 明确关闭
+  use_image: true
+
+  metrics:
+    psnr: 
+      type: psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: ssim
+      crop_border: 0
+      test_y_channel: false
+
+# ========================== 日志设置 ==========================
+logger:
+  print_freq: 50
+  use_tb_logger: false
+  wandb:
+    project: ~
+    resume_id: ~
+
+# ========================== 分布式设置 ==========================
+dist_params:
+  backend: nccl
+  port: 29500 

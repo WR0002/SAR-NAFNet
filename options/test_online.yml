@@ -1,0 +1,139 @@
+# test_online.yml (Adjusted to provide 'kernel_prob' key)
+
+# ========================== 通用設置 ==========================
+name: NAFNet-SAR-Test-Online-And-Save
+model_type: ImageRestorationModel
+scale: 1
+num_gpu: 1
+manual_seed: 43
+
+# ========================== 数据集设置 ==========================
+datasets:
+  # --- 測試 1: Anisotropic Gaussian 模糊核 ---
+  test_aniso:
+    name: Test_Aniso_Online
+    type: OnlineSAR_Deblur_Dataset
+    dataroot_gt: /media/sr5/datasets/sar_deblurring/New-test-single
+    #save_lq_folder: ./results/generated_lq/aniso_256
+    io_backend:
+        type: disk
+    kernel_options:
+      # ✨ 修正：將 kernel_list 改回列表格式
+      kernel_list: ['aniso']
+      # ✨ 修正：重新加入 kernel_prob 鍵，以避免 KeyError
+      kernel_prob: [1.0]
+      kernel_size_range: [7, 25]
+      sigma_x_range: [0.5, 4]
+      sigma_y_range: [0.5, 4]
+      rotation_range: [-3.14159, 3.14159]
+      betag_range: [0.5, 4]
+      betap_range: [1, 2]
+      isotropic_options: {'aniso': False, 'generalized_aniso': False, 'plateau_aniso': False}
+    
+    gt_size: 256
+    use_flip: false
+    use_rot: false
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 32
+    prefetch_mode: ~
+
+  # --- 測試 2: Anisotropic Generalized Gaussian 模糊核 ---
+  test_generalized_aniso:
+    name: Test_Generalized_Aniso_Online
+    type: OnlineSAR_Deblur_Dataset
+    dataroot_gt: /media/sr5/datasets/sar_deblurring/New-test-single
+    #save_lq_folder: ./results/generated_lq/generalized_aniso_256
+    io_backend:
+      type: disk
+    kernel_options:
+      # ✨ 修正：改回列表格式
+      kernel_list: ['generalized_aniso']
+      # ✨ 修正：重新加入 kernel_prob 鍵
+      kernel_prob: [1.0]
+      kernel_size_range: [7, 25]
+      sigma_x_range: [0.5, 4]
+      sigma_y_range: [0.5, 4]
+      rotation_range: [-3.14159, 3.14159]
+      betag_range: [0.5, 4]
+      betap_range: [1, 2]
+      isotropic_options: {'aniso': False, 'generalized_aniso': False, 'plateau_aniso': False}
+      
+    gt_size: 256
+    use_flip: false
+    use_rot: false
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 32
+    prefetch_mode: ~
+
+  # --- 測試 3: Anisotropic Plateau 模糊核 ---
+  test_plateau_aniso:
+    name: Test_Plateau_Aniso_Online
+    type: OnlineSAR_Deblur_Dataset
+    dataroot_gt: /media/sr5/datasets/sar_deblurring/New-test-single
+    #save_lq_folder: ./results/generated_lq/plateau_aniso_256
+    io_backend:
+      type: disk
+    
+    kernel_options:
+      kernel_list: ['plateau_aniso']
+      # ✨ 修正：重新加入 kernel_prob 鍵
+      kernel_prob: [1.0]
+      kernel_size_range: [7, 25]
+      sigma_x_range: [0.5, 4]
+      sigma_y_range: [0.5, 4]
+      rotation_range: [-3.14159, 3.14159]
+      betag_range: [0.5, 4]
+      betap_range: [1, 2]
+      isotropic_options: {'aniso': False, 'generalized_aniso': False, 'plateau_aniso': False}
+      
+    gt_size: 256
+    use_flip: false
+    use_rot: false
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 32
+    prefetch_mode: ~
+
+# ========================== 网络设置 ==========================
+network_g:
+  type: NAFNet
+  img_channel: 1
+  width: 32
+  enc_blk_nums: [1, 1, 1, 28]
+  middle_blk_num: 1
+  dec_blk_nums: [1, 1, 1, 1]
+
+# ========================== 路径与权重设置 ==========================
+path:
+  pretrain_network_g: experiments/net_g_200000.pth
+  strict_load_g: true
+  resume_state: ~
+
+# ========================== 测试设置 ==========================
+val:
+  save_img: true
+  suffix: ~
+  rgb2gr: true
+  use_image: true
+
+  metrics:
+    psnr: 
+      type: psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: ssim
+      crop_border: 0
+      test_y_channel: false
+
+# ========================== 日志设置 ==========================
+logger:
+  print_freq: 50
+  use_tb_logger: false
+  wandb:
+    project: ~
+    resume_id: ~
+
+# ========================== 分布式设置 ==========================
+dist_params:
+  backend: nccl
+  port: 29500

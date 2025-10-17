@@ -1,0 +1,117 @@
+# ========================== 通用设置 ==========================
+name: NAFNet-SAR-FromScratch-width32-SingleBlur-256-single
+model_type: ImageRestorationModel
+scale: 1
+num_gpu: 1 
+manual_seed: 42
+
+# ========================== 数据集设置 ==========================
+datasets:
+  train:
+    name: SAR-train
+    type: OnlineSAR_Deblur_Dataset
+    dataroot_gt: ./media/sr5/datasets/sar_deblurring/GT-single
+    kernel_options:
+        kernel_size_range: [7, 25]
+        kernel_list: ['aniso', 'generalized_aniso', 'plateau_aniso']
+        kernel_prob: [0.33, 0.33, 0.34]
+        sigma_x_range: [0.5, 4]
+        sigma_y_range: [0.5, 4]
+        rotation_range: [-3.14159, 3.14159]
+        betag_range: [0.5, 4]
+        betap_range: [1, 2]
+        isotropic_options: {'aniso': False, 'generalized_aniso': False, 'plateau_aniso': False}
+    
+    gt_size: 256  
+    use_flip: true
+    use_rot: true
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 16  
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val:
+    name: SAR-val
+    type: OnlineSAR_Deblur_Dataset
+    dataroot_gt: /media/sr5/datasets/sar_deblurring/val-256
+    io_backend:
+      type: disk
+
+    kernel_options:
+        kernel_size_range: [7, 25]
+        kernel_list: ['aniso', 'generalized_aniso', 'plateau_aniso']
+        kernel_prob: [0.33, 0.33, 0.34]
+        sigma_x_range: [0.5, 4]  
+        sigma_y_range: [0.5, 4]
+        rotation_range: [-3.14159, 3.14159]
+        betag_range: [0.5, 4]
+        betap_range: [1, 2]
+        isotropic_options: {'aniso': False, 'generalized_aniso': False, 'plateau_aniso': False}
+
+# ========================== 网络设置 ==========================
+network_g:
+  type: NAFNet
+  img_channel: 1 
+  width: 32
+  enc_blk_nums: [1, 1, 1, 28]
+  middle_blk_num: 1
+  dec_blk_nums: [1, 1, 1, 1]
+
+# ========================== 路径与权重设置 ==========================
+path:
+  pretrain_network_g: ~  # 设置为空，不从预训练权重开始
+  strict_load_g: false
+  resume_state: ~  # 设置为空，不恢复训练状态
+
+# ========================== 训练设置 ==========================
+train:
+  optim_g:
+    type: AdamW
+    lr: !!float 1e-3  # 从零开始训练，使用稍高的学习率
+    weight_decay: !!float 1e-3
+    betas: [0.9, 0.9]
+
+  scheduler:
+    type: TrueCosineAnnealingLR
+    T_max: 200000
+    eta_min: !!float 1e-7
+
+  total_iter: 200000
+
+  # losses
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+
+# ========================== 验证设置 ==========================
+val:
+  val_freq: !!float 5e3
+  save_img: false  # 设为false以节省空间
+
+  metrics:
+    psnr: 
+      type: psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: ssim
+      crop_border: 0
+      test_y_channel: false
+
+# ========================== 日志设置 ==========================
+logger:
+  print_freq: 200
+  save_checkpoint_freq: !!float 1e4
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# ========================== 分布式训练设置 ==========================
+dist_params:
+  backend: nccl
+  port: 29500
